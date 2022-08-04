@@ -34,7 +34,7 @@ import org.apache.hadoop.fs.s3a.S3AFileSystem
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
 import scala.collection.mutable.ListBuffer
 
-import io.delta.sharing.server.{model, AbfsFileSigner, GCSFileSigner, S3FileSigner, WasbFileSigner}
+import io.delta.sharing.server.{model, AbfsFileSigner, DeltaSharingNoSuchElementException, GCSFileSigner, S3FileSigner, WasbFileSigner}
 import io.delta.sharing.server.config.{ServerConfig, TableConfig}
 
 /**
@@ -134,6 +134,9 @@ class DeltaSharedTable(
       predicateHints: Seq[String],
       limitHint: Option[Long],
       version: Option[Long]): (Long, Seq[model.SingleAction]) = withClassLoader {
+    if (!deltaLog.tableExists()) {
+      throw new DeltaSharingNoSuchElementException(s"Table does not exist: ${tableConfig.location}")
+    }
     // TODO Support `limitHint`
     val snapshot = if (version.isEmpty) deltaLog.snapshot else {
       deltaLog.getSnapshotForVersionAsOf(version.get)
@@ -184,6 +187,10 @@ class DeltaSharedTable(
 
 
   def queryCDF(cdfOptions: Map[String, String]): Seq[model.SingleAction] = withClassLoader {
+    if (!deltaLog.tableExists()) {
+      throw new DeltaSharingNoSuchElementException(s"Table does not exist: ${tableConfig.location}")
+    }
+
     val actions = ListBuffer[model.SingleAction]()
 
     // First: validate cdf options are greater than startVersion

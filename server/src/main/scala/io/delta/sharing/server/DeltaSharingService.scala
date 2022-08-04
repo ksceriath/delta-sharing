@@ -234,7 +234,7 @@ class DeltaSharingService(serverConfig: ServerConfig) {
     @Param("share") share: String,
     @Param("schema") schema: String,
     @Param("table") table: String): HttpResponse = processRequest {
-    val tableConfig = sharedTableManager.getTable(share, schema, table)
+    val tableConfig = TableConfigGenerator.generateTableConfig(share, schema, table)
     val version = deltaSharedTableLoader.loadTable(tableConfig).tableVersion
     val headers = createHeadersBuilderForTableVersion(version).build()
     HttpResponse.of(headers)
@@ -246,7 +246,7 @@ class DeltaSharingService(serverConfig: ServerConfig) {
       @Param("schema") schema: String,
       @Param("table") table: String): HttpResponse = processRequest {
     import scala.collection.JavaConverters._
-    val tableConfig = sharedTableManager.getTable(share, schema, table)
+    val tableConfig = TableConfigGenerator.generateTableConfig(share, schema, table)
     val (version, actions) = deltaSharedTableLoader.loadTable(tableConfig).query(
       includeFiles = false,
       Nil,
@@ -267,7 +267,7 @@ class DeltaSharingService(serverConfig: ServerConfig) {
     }
 
     val start = System.currentTimeMillis
-    val tableConfig = sharedTableManager.getTable(share, schema, table)
+    val tableConfig = TableConfigGenerator.generateTableConfig(share, schema, table)
     if (queryTableRequest.version.isDefined) {
       if (!tableConfig.cdfEnabled) {
         throw new DeltaSharingIllegalArgumentException("Reading table by version is not supported" +
@@ -300,7 +300,7 @@ class DeltaSharingService(serverConfig: ServerConfig) {
       @Param("startingTimestamp") @Nullable startingTimestamp: String,
       @Param("endingTimestamp") @Nullable endingTimestamp: String): HttpResponse = processRequest {
     val start = System.currentTimeMillis
-    val tableConfig = sharedTableManager.getTable(share, schema, table)
+    val tableConfig = TableConfigGenerator.generateTableConfig(share, schema, table)
     if (!tableConfig.cdfEnabled) {
       throw new DeltaSharingIllegalArgumentException("cdf is not enabled on table " +
         s"$share.$schema.$table")
